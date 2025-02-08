@@ -13,9 +13,6 @@ def preprocess_logs(content: str) -> List[str]:
     processed_lines = [l.strip() for l in lines]
     return processed_lines
 
-def parse_logs(logs: List[str]):
-    pass
-
 def get_protocol_map(csv_path: str) -> Dict[str, str]:
     protocols = {}
     with open(csv_path) as csvfile:
@@ -34,10 +31,11 @@ def fetch_lookup_table(csv_path: str) -> Dict[tuple, str]:
         reader = csv.reader(csvfile)
         next(reader)
         for row in reader:
-            dest_port = row[0].strip()
-            protocol_name = row[1].strip().lower()
-            tag = row[2].strip()
-            lookup_table[(dest_port, protocol_name)] = tag
+            if row and len(row) >= 3 and row[0].strip() and row[1].strip() and row[2].strip():
+                dest_port = row[0].strip()
+                protocol_name = row[1].strip().lower()
+                tag = row[2].strip()
+                lookup_table[(dest_port, protocol_name)] = tag
     return lookup_table
 
 
@@ -58,7 +56,7 @@ if __name__ == "__main__":
     lines = preprocess_logs(content=content)
     protocol_map = get_protocol_map("./data/protocol_map/protocol-numbers.csv")
     tag_count = defaultdict(int)
-    count = defaultdict(int)
+    port_protocol_count = defaultdict(int)
 
 
     for line in lines:
@@ -75,14 +73,17 @@ if __name__ == "__main__":
             tag_count[lookup_table[(dest_port, protocol_name)]] += 1
         else:
             tag_count['Untagged'] += 1
-        count[(dest_port, protocol_name)] += 1
+        port_protocol_count[(dest_port, protocol_name)] += 1
 
         
-
-    for t,v in sorted(tag_count.items()):
-        print(t,v)   
-    print()
-
-    for k,v in sorted(count.items()):
-        d,p = k
-        print(d,p,v)          
+    with open(args.output_file, "w") as output_file:
+        output_file.write("Tag Counts:\n")
+        output_file.write("Tag,Count\n")
+        for tag, count in tag_count.items():
+            output_file.write(f"{tag},{count}\n")
+        
+        output_file.write("\nPort/Protocol Combination Counts:\n")
+        output_file.write("Port,Protocol,Count\n")
+        for (port, protocol), count in port_protocol_count.items():
+            output_file.write(f"{port},{protocol},{count}\n")
+    
