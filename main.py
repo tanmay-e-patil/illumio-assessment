@@ -52,9 +52,9 @@ def process_log_entries(log_entries: List[str], lookup_table: Dict[tuple, str], 
         if dest_port == '-' or protocol_number == '-':
             continue
        
-        protocol_name = protocol_map[protocol_number] 
-        tag = lookup_table.get((dest_port, protocol_name), "Untagged")
-        tag_counts[tag] += 1
+        protocol_name = protocol_map.get(protocol_number, "unknown")
+        tag = lookup_table.get((dest_port, protocol_name), "untagged")
+        tag_counts[tag.lower()] += 1
         port_protocol_count[(dest_port, protocol_name)] += 1
     
     return tag_counts, port_protocol_count
@@ -96,7 +96,5 @@ def main():
    
     write_output(args.output_file, tag_counts, port_protocol_count)
 
-
 if __name__ == "__main__":
-    main()
-    
+    main()    
