@@ -1,6 +1,7 @@
 from typing import List, Dict
 from collections import defaultdict
 import csv
+import argparse
 
 def read_flow_logs(log_file: str) -> str:  
     with open(log_file, "r") as file:
@@ -44,10 +45,18 @@ def fetch_lookup_table(csv_path: str) -> Dict[tuple, str]:
     
 
 if __name__ == "__main__":
-    content = read_flow_logs("./data/input/flow_logs.txt")
+
+    parser = argparse.ArgumentParser(description="Process VPC flow logs.")
+    parser.add_argument("--flow-logs", required=True, help="Path to the flow logs file")
+    parser.add_argument("--lookup-table", required=True, help="Path to the lookup table CSV file")
+    parser.add_argument("--output-file", required=True, help="Path to the output file")
+    
+    args = parser.parse_args()
+
+    content = read_flow_logs(args.flow_logs)
+    lookup_table = fetch_lookup_table(args.lookup_table)
     lines = preprocess_logs(content=content)
     protocol_map = get_protocol_map("./data/protocol_map/protocol-numbers.csv")
-    lookup_table = fetch_lookup_table("./data/input/lookup_table.csv")
     tag_count = defaultdict(int)
     count = defaultdict(int)
 
