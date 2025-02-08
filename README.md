@@ -36,5 +36,5 @@ python3 main.py --flow-logs ./data/input/flow_logs.txt --lookup-table ./data/inp
 Tested manually with:
 * Cases with incorrect CLI arguments.
 * Cases with case-sensitive values, e.g., entries with sv_p1 and sv_P1 tags in lookup.csv.
-* Cases where destination and protocol number are not present.
+* Cases where destination and protocol number are of value '-'.
 * Cases where the flow log is malformed.
