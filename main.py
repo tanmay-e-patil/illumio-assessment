@@ -2,9 +2,10 @@ from typing import List, Dict
 from collections import defaultdict
 import csv
 import argparse
+import os
 
-def read_flow_logs(log_file: str) -> str:  
-    with open(log_file, "r") as file:
+def read_flow_logs(log_filepath: str) -> str:  
+    with open(log_filepath, "r") as file:
         log_data = file.read()
     return preprocess_logs(log_data)
 
@@ -13,7 +14,7 @@ def preprocess_logs(log_data: str) -> List[str]:
     cleaned_logs = [entry.strip() for entry in log_entries]
     return cleaned_logs
 
-def fetch_protocol_map(csv_path: str) -> Dict[str, str]:
+def fetch_protocol_map(csv_path: str) -> Dict[str, str]:   
     protocols = {}
     with open(csv_path) as csvfile:
         reader = csv.reader(csvfile)
@@ -58,21 +59,19 @@ def process_log_entries(log_entries: List[str], lookup_table: Dict[tuple, str], 
     
     return tag_counts, port_protocol_count
 
-def write_output(output_file: str, tag_count: Dict[str, int], port_protocol_count: Dict[tuple, int]):
-    with open(output_file, "w") as output_file:
-        output_file.write("Tag Counts:\n")
-        output_file.write("Tag,Count\n")
+def write_output(output_filepath: str, tag_count: Dict[str, int], port_protocol_count: Dict[tuple, int]):
+    with open(output_filepath, "w") as file:
+        file.write("Tag Counts:\n")
+        file.write("Tag,Count\n")
         for tag, count in tag_count.items():
-            output_file.write(f"{tag},{count}\n")
+            file.write(f"{tag},{count}\n")
         
-        output_file.write("\nPort/Protocol Combination Counts:\n")
-        output_file.write("Port,Protocol,Count\n")
+        file.write("\nPort/Protocol Combination Counts:\n")
+        file.write("Port,Protocol,Count\n")
         for (port, protocol), count in port_protocol_count.items():
-            output_file.write(f"{port},{protocol},{count}\n")
+            file.write(f"{port},{protocol},{count}\n")
 
-
-if __name__ == "__main__":
-
+def main():
     PROTOCOL_MAP_FILEPATH = "./data/protocol_map/protocol-numbers.csv"
 
     parser = argparse.ArgumentParser(description="Process VPC flow logs.")
@@ -82,6 +81,13 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
 
+    if not os.path.exists(args.flow_logs):
+        exit(f"Error: The file {args.flow_logs} does not exist.")
+    if not os.path.exists(args.lookup_table):
+        exit(f"Error: The file {args.lookup_table} does not exist.")
+    if not os.path.isdir(os.path.dirname(args.output_file)):
+        exit(f"Error: The directory for the output file {args.output_file} does not exist.")
+
     log_entries = read_flow_logs(args.flow_logs)
     lookup_table = fetch_lookup_table(args.lookup_table)
     protocol_map = fetch_protocol_map(PROTOCOL_MAP_FILEPATH)    
@@ -89,4 +95,8 @@ if __name__ == "__main__":
     tag_counts, port_protocol_count = process_log_entries(log_entries, lookup_table, protocol_map)
    
     write_output(args.output_file, tag_counts, port_protocol_count)
+
+
+if __name__ == "__main__":
+    main()
     
