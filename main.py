@@ -5,15 +5,15 @@ import argparse
 
 def read_flow_logs(log_file: str) -> str:  
     with open(log_file, "r") as file:
-        content = file.read()
-    return content
+        log_data = file.read()
+    return preprocess_logs(log_data)
 
-def preprocess_logs(content: str) -> List[str]:
-    lines = content.split("\n")
-    processed_lines = [l.strip() for l in lines]
-    return processed_lines
+def preprocess_logs(log_data: str) -> List[str]:
+    log_entries = log_data.split("\n")
+    cleaned_logs = [entry.strip() for entry in log_entries]
+    return cleaned_logs
 
-def get_protocol_map(csv_path: str) -> Dict[str, str]:
+def fetch_protocol_map(csv_path: str) -> Dict[str, str]:
     protocols = {}
     with open(csv_path) as csvfile:
         reader = csv.reader(csvfile)
@@ -31,52 +31,35 @@ def fetch_lookup_table(csv_path: str) -> Dict[tuple, str]:
         reader = csv.reader(csvfile)
         next(reader)
         for row in reader:
-            if row and len(row) >= 3 and row[0].strip() and row[1].strip() and row[2].strip():
-                dest_port = row[0].strip()
-                protocol_name = row[1].strip().lower()
-                tag = row[2].strip()
-                lookup_table[(dest_port, protocol_name)] = tag
+            if row and len(row) == 3:
+                dest_port, protocol_name, tag = row
+                lookup_table[(dest_port.strip(), protocol_name.strip().lower())] = tag.strip()
+            else:
+                exit("Invalid lookup table format")
     return lookup_table
 
-
-
-    
-
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description="Process VPC flow logs.")
-    parser.add_argument("--flow-logs", required=True, help="Path to the flow logs file")
-    parser.add_argument("--lookup-table", required=True, help="Path to the lookup table CSV file")
-    parser.add_argument("--output-file", required=True, help="Path to the output file")
-    
-    args = parser.parse_args()
-
-    content = read_flow_logs(args.flow_logs)
-    lookup_table = fetch_lookup_table(args.lookup_table)
-    lines = preprocess_logs(content=content)
-    protocol_map = get_protocol_map("./data/protocol_map/protocol-numbers.csv")
-    tag_count = defaultdict(int)
+def process_log_entries(log_entries: List[str], lookup_table: Dict[tuple, str], protocol_map: Dict[str, str]) -> tuple[Dict[str, int], Dict[tuple, int]]:
+    tag_counts = defaultdict(int)
     port_protocol_count = defaultdict(int)
 
-
-    for line in lines:
-        fields = line.split()
-        if fields[0] != '2':
-            print("Version not supported")
-            continue
+    for log in log_entries:
+        fields = log.split()
+        if len(fields) < 8 or fields[0] != '2':
+            continue       
         dest_port, protocol_number = fields[6],fields[7]
         
         if dest_port == '-' or protocol_number == '-':
             continue
-        protocol_name = protocol_map[protocol_number]
-        if (dest_port, protocol_name) in lookup_table:
-            tag_count[lookup_table[(dest_port, protocol_name)]] += 1
-        else:
-            tag_count['Untagged'] += 1
+       
+        protocol_name = protocol_map[protocol_number] 
+        tag = lookup_table.get((dest_port, protocol_name), "Untagged")
+        tag_counts[tag] += 1
         port_protocol_count[(dest_port, protocol_name)] += 1
+    
+    return tag_counts, port_protocol_count
 
-        
-    with open(args.output_file, "w") as output_file:
+def write_output(output_file: str, tag_count: Dict[str, int], port_protocol_count: Dict[tuple, int]):
+    with open(output_file, "w") as output_file:
         output_file.write("Tag Counts:\n")
         output_file.write("Tag,Count\n")
         for tag, count in tag_count.items():
@@ -86,4 +69,24 @@ if __name__ == "__main__":
         output_file.write("Port,Protocol,Count\n")
         for (port, protocol), count in port_protocol_count.items():
             output_file.write(f"{port},{protocol},{count}\n")
+
+
+if __name__ == "__main__":
+
+    PROTOCOL_MAP_FILEPATH = "./data/protocol_map/protocol-numbers.csv"
+
+    parser = argparse.ArgumentParser(description="Process VPC flow logs.")
+    parser.add_argument("--flow-logs", required=True, help="Path to the flow logs file")
+    parser.add_argument("--lookup-table", required=True, help="Path to the lookup table CSV file")
+    parser.add_argument("--output-file", required=True, help="Path to the output file")
+    
+    args = parser.parse_args()
+
+    log_entries = read_flow_logs(args.flow_logs)
+    lookup_table = fetch_lookup_table(args.lookup_table)
+    protocol_map = fetch_protocol_map(PROTOCOL_MAP_FILEPATH)    
+
+    tag_counts, port_protocol_count = process_log_entries(log_entries, lookup_table, protocol_map)
+   
+    write_output(args.output_file, tag_counts, port_protocol_count)
     
