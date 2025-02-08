@@ -85,7 +85,9 @@ def main():
         exit(f"Error: The file {args.flow_logs} does not exist.")
     if not os.path.exists(args.lookup_table):
         exit(f"Error: The file {args.lookup_table} does not exist.")
-    if not os.path.isdir(os.path.dirname(args.output_file)):
+
+    output_dir = os.path.dirname(args.output_file)
+    if output_dir and not os.path.isdir(output_dir):
         exit(f"Error: The directory for the output file {args.output_file} does not exist.")
 
     log_entries = read_flow_logs(args.flow_logs)
