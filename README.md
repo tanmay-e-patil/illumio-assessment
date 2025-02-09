@@ -9,6 +9,16 @@ The program processes AWS VPC Flow Logs (Version 2 only) to generate statistics 
 * Store the tag and protocol name in lowercase in the result file to make matches case insensitive.
 
 ## How to run
+1. Clone the repository
+```
+git clone https://github.com/tanmay-e-patil/illumio-assessment.git
+```
+2. Go in the directory
+```
+cd illumio-assessment
+```
+
+3. Run the script
 
 ### Usage
 ```
