@@ -19,6 +19,9 @@ cd illumio-assessment
 ```
 
 3. Run the script
+```
+python3 main.py --flow-logs ./data/input/flow_logs.txt --lookup-table ./data/input/lookup_table.csv --output-file ./output.txt
+```
 
 ### Usage
 ```
@@ -34,11 +37,6 @@ options:
                         Path to the lookup table CSV file
   --output-file OUTPUT_FILE
                         Path to the output file
-```
-
-### Example
-```
-python3 main.py --flow-logs ./data/input/flow_logs.txt --lookup-table ./data/input/lookup_table.csv --output-file ./output.txt
 ```
 
 
